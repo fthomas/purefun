@@ -7,25 +7,19 @@ case object R extends Color
 case object B extends Color
 
 sealed abstract class RBTree[A] extends Product with Serializable {
-  import RBTree._
-
   protected def color: Color
 
-  private def balance: RBTree[A] =
-    this match {
-      case Node(Node(Node(a, x, b, R), y, c, R), z, d, B) => Node(Node(a, x, b, B), y, Node(c, z, d, B), R)
-      case Node(Node(a, x, Node(b, y, c, R), R), z, d, B) => Node(Node(a, x, b, B), y, Node(c, z, d, B), R)
-      case Node(a, x, Node(Node(b, y, c, R), z, d, R), B) => Node(Node(a, x, b, B), y, Node(c, z, d, B), R)
-      case Node(a, x, Node(b, y, Node(c, z, d, R), R), B) => Node(Node(a, x, b, B), y, Node(c, z, d, B), R)
-      case _ => this
-    }
-
   def insert(x: A)(implicit A: Ordering[A]): RBTree[A] = {
-    this match {
-      case Leaf() => singleton(x)
-      case Node(l, a, r, c) => ???
-    }
-    ???
+    import A._
+    def go(tree: RBTree[A]): Node[A] =
+      tree match {
+        case Leaf() => Node(Leaf(), x, Leaf(), R)
+        case node @ Node(l, a, r, c) =>
+          if (x < a) Node(go(l), a, r, c).balance
+          else if (x > a) Node(l, a, go(r), c).balance
+          else node
+      }
+    go(this).copy(color = B)
   }
 
   @tailrec
@@ -45,7 +39,16 @@ case class Leaf[A]() extends RBTree[A] {
   def color: Color = B
 }
 
-case class Node[A](left: RBTree[A], elem: A, right: RBTree[A], color: Color) extends RBTree[A]
+case class Node[A](left: RBTree[A], elem: A, right: RBTree[A], color: Color) extends RBTree[A] {
+  private[purefun] def balance: Node[A] =
+    this match {
+      case Node(Node(Node(a, x, b, R), y, c, R), z, d, B) => Node(Node(a, x, b, B), y, Node(c, z, d, B), R)
+      case Node(Node(a, x, Node(b, y, c, R), R), z, d, B) => Node(Node(a, x, b, B), y, Node(c, z, d, B), R)
+      case Node(a, x, Node(Node(b, y, c, R), z, d, R), B) => Node(Node(a, x, b, B), y, Node(c, z, d, B), R)
+      case Node(a, x, Node(b, y, Node(c, z, d, R), R), B) => Node(Node(a, x, b, B), y, Node(c, z, d, B), R)
+      case _ => this
+    }
+}
 
 object RBTree {
   def empty[A]: RBTree[A] = Leaf()
