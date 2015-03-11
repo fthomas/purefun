@@ -51,6 +51,9 @@ case class Node[A](left: RBTree[A], elem: A, right: RBTree[A], color: Color) ext
 }
 
 object RBTree {
+  def apply[A: Ordering](as: A*): RBTree[A] =
+    as.foldLeft(empty[A])((t, a) => t.insert(a))
+
   def empty[A]: RBTree[A] = Leaf()
 
   def singleton[A](a: A): RBTree[A] = Node(empty, a, empty, B)
