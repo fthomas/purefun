@@ -9,7 +9,7 @@ case object B extends Color
 sealed abstract class RBTree[A] extends Product with Serializable {
   protected def color: Color
 
-  def insert(x: A)(implicit A: Ordering[A]): RBTree[A] = {
+  final def insert(x: A)(implicit A: Ordering[A]): RBTree[A] = {
     import A._
     def go(tree: RBTree[A]): Node[A] =
       tree match {
@@ -22,6 +22,12 @@ sealed abstract class RBTree[A] extends Product with Serializable {
     go(this).copy(color = B)
   }
 
+  final def fold[B](b: B)(f: (B, A, B) => B): B =
+    this match {
+      case Leaf() => b
+      case Node(l, a, r, _) => f(l.fold(b)(f), a, r.fold(b)(f))
+    }
+
   @tailrec
   final def member(x: A)(implicit A: Ordering[A]): Boolean = {
     import A._
@@ -33,6 +39,25 @@ sealed abstract class RBTree[A] extends Product with Serializable {
         else true
     }
   }
+
+  @tailrec
+  final def maximum: Option[A] =
+    this match {
+      case Leaf() => None
+      case Node(_, a, Leaf(), _) => Some(a)
+      case Node(_, _, r, _) => r.maximum
+    }
+
+  @tailrec
+  final def minimum: Option[A] =
+    this match {
+      case Leaf() => None
+      case Node(Leaf(), a, _, _) => Some(a)
+      case Node(l, _, _, _) => l.minimum
+    }
+
+  final def size: Int =
+    fold(0)((l, _, r) => l + r + 1)
 }
 
 case class Leaf[A]() extends RBTree[A] {
@@ -55,6 +80,10 @@ object RBTree {
     as.foldLeft(empty[A])((t, a) => t.insert(a))
 
   def empty[A]: RBTree[A] = Leaf()
+
+  def fromSeq[A: Ordering](as: Seq[A]): RBTree[A] = apply(as: _*)
+
+  def fromSet[A: Ordering](as: Set[A]): RBTree[A] = fromSeq(as.toSeq)
 
   def singleton[A](a: A): RBTree[A] = Node(empty, a, empty, B)
 }
