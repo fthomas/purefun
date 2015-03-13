@@ -10,13 +10,13 @@ sealed abstract class RBTree[A] extends Product with Serializable {
   protected def color: Color
 
   final def insert(x: A)(implicit A: Ordering[A]): RBTree[A] = {
-    import A._
+    //import A._
     def go(tree: RBTree[A]): Node[A] =
       tree match {
         case Leaf() => Node(Leaf(), x, Leaf(), R)
         case node @ Node(l, a, r, c) =>
-          if (x < a) Node(go(l), a, r, c).balance
-          else if (x > a) Node(l, a, go(r), c).balance
+          if (A.lt(x, a)) Node(go(l), a, r, c).balanceLeft
+          else if (A.gt(x, a)) Node(l, a, go(r), c).balanceRight
           else node
       }
     go(this).copy(color = B)
@@ -65,10 +65,15 @@ case class Leaf[A]() extends RBTree[A] {
 }
 
 case class Node[A](left: RBTree[A], elem: A, right: RBTree[A], color: Color) extends RBTree[A] {
-  private[purefun] def balance: Node[A] =
+  private[purefun] def balanceLeft: Node[A] =
     this match {
       case Node(Node(Node(a, x, b, R), y, c, R), z, d, B) => Node(Node(a, x, b, B), y, Node(c, z, d, B), R)
       case Node(Node(a, x, Node(b, y, c, R), R), z, d, B) => Node(Node(a, x, b, B), y, Node(c, z, d, B), R)
+      case _ => this
+    }
+
+  private[purefun] def balanceRight: Node[A] =
+    this match {
       case Node(a, x, Node(Node(b, y, c, R), z, d, R), B) => Node(Node(a, x, b, B), y, Node(c, z, d, B), R)
       case Node(a, x, Node(b, y, Node(c, z, d, R), R), B) => Node(Node(a, x, b, B), y, Node(c, z, d, B), R)
       case _ => this
