@@ -9,18 +9,54 @@ case object B extends Color
 sealed abstract class RBTree[A] extends Product with Serializable {
   protected def color: Color
 
+  def depth: Int =
+    this match {
+      case Leaf() => 0
+      case Node(l, _, r, _) => 1 + math.max(l.depth, r.depth)
+    }
+
+  def depthCPS: Int = {
+    def go(tree: RBTree[A], cont: Int => Int): Int =
+      tree match {
+        case Leaf() => cont(0)
+        case Node(l, _, r, _) =>
+          go(l, dl =>
+            go(r, dr =>
+              cont(1 + math.max(dl, dr))))
+      }
+    go(this, identity)
+  }
+
+  def depth2: Int = {
+    @tailrec
+    def go(d: Int, acc: List[(Int, RBTree[A])]): Int =
+      acc match {
+        case List() => d
+        case (d2, Leaf()) :: xs => go(math.max(d, d2), xs)
+        case (d2, Node(l, _, r, _)) :: xs =>
+          go(d, (d2 + 1, l) :: (d2 + 1, r) :: xs)
+      }
+    go(0, List((0, this)))
+  }
+
   final def insert(x: A)(implicit A: Ordering[A]): RBTree[A] = {
-    //import A._
+    import A._
     def go(tree: RBTree[A]): Node[A] =
       tree match {
         case Leaf() => Node(Leaf(), x, Leaf(), R)
         case node @ Node(l, a, r, c) =>
-          if (A.lt(x, a)) Node(go(l), a, r, c).balanceLeft
-          else if (A.gt(x, a)) Node(l, a, go(r), c).balanceRight
+          if (x < a) Node(go(l), a, r, c).balanceLeft
+          else if (x > a) Node(l, a, go(r), c).balanceRight
           else node
       }
     go(this).copy(color = B)
   }
+
+  final def isEmpty: Boolean =
+    this match {
+      case Leaf() => true
+      case _ => false
+    }
 
   final def fold[B](b: B)(f: (B, A, B) => B): B =
     this match {
