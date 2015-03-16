@@ -5,20 +5,28 @@ import scala.annotation.tailrec
 sealed abstract class StrictList[A] extends Product with Serializable {
   import StrictList._
 
-  final def ++(as: StrictList[A]): StrictList[A] = ???
+  final def ++(as: StrictList[A]): StrictList[A] =
+    this match {
+      case Nil() => as
+      case Cons(h, t) => Cons(h, t ++ as)
+    }
 
   final def +:(a: A): StrictList[A] =
     Cons(a, this)
 
-  final def drop(n: Int): StrictList[A] = {
-    def go(i: Int, list: StrictList[A]): StrictList[A] =
-      if (i <= 0) list
-      else list match {
-        case Nil() => list
-        case Cons(h, t) => go(i - 1, t)
-      }
-    go(n, this)
-  }
+  @tailrec
+  final def drop(n: Int): StrictList[A] =
+    this match {
+      case Cons(h, t) if n > 0 => t.drop(n - 1)
+      case _ => this
+    }
+
+  @tailrec
+  final def dropWhile(p: A => Boolean): StrictList[A] =
+    this match {
+      case Cons(h, t) if p(h) => t.dropWhile(p)
+      case _ => this
+    }
 
   final def flatMap[B](f: A => StrictList[B]): StrictList[B] = ???
 
@@ -57,26 +65,27 @@ sealed abstract class StrictList[A] extends Product with Serializable {
 
   final def tailOption: Option[StrictList[A]] =
     this match {
-      case Nil() => None
       case Cons(h, t) => Some(t)
+      case Nil() => None
     }
 
   final def take(n: Int): StrictList[A] = {
     @tailrec
     def go(i: Int, list: StrictList[A], acc: StrictList[A]): StrictList[A] =
-      if (i <= 0) acc.reverse
-      else list match {
-        case Nil() => acc.reverse
-        case Cons(h, t) => go(i - 1, t, Cons(h, acc))
+      list match {
+        case Cons(h, t) if i > 0 => go(i - 1, t, Cons(h, acc))
+        case _ => acc.reverse
       }
     go(n, this, empty)
   }
 
-  final override def toString: String =
-    this match {
-      case Nil() => "StrictList()"
-      case Cons(h, t) => "StrictList(" + h + t.foldLeft("")((s, a) => s + ", " + a) + ")"
+  final override def toString: String = {
+    val elems = this match {
+      case Nil() => ""
+      case Cons(h, t) => h.toString + t.foldLeft("")((s, a) => s + ", " + a.toString)
     }
+    s"StrictList($elems)"
+  }
 }
 
 object StrictList {
