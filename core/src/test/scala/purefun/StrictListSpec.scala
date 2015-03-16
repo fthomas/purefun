@@ -4,19 +4,39 @@ import org.scalacheck._
 import org.scalacheck.Prop._
 
 object StrictListSpec extends Properties("StrictListSpec") {
-  property("halve") = forAll { xs: List[Int] =>
-    true
+
+  implicit def arbitraryStrictList[A](implicit A: Arbitrary[A]): Arbitrary[StrictList[A]] =
+    Arbitrary(Gen.listOf(A.arbitrary).map(StrictList.fromSeq))
+
+  property("++ ~= List.++") = forAll { (xs: StrictList[Int], ys: StrictList[Int]) =>
+    (xs ++ ys).toList == xs.toList ++ ys.toList
   }
 
-  property("headOption ~= List.headOption") = forAll { xs: List[Int] =>
-    StrictList.fromSeq(xs).headOption == xs.headOption
+  property("drop ~= List.drop") = forAll { xs: StrictList[Int] =>
+    val n = Gen.choose(-1, xs.size + 1).sample.get
+    xs.drop(n).toList == xs.toList.drop(n)
   }
 
-  property("isEmpty ~= List.isEmpty") = forAll { xs: List[Int] =>
-    StrictList.fromSeq(xs).isEmpty == xs.isEmpty
+  property("halve") = forAll { xs: StrictList[Int] =>
+    val (l, r) = xs.halve
+    val diff = l.size - r.size
+
+    l ++ r == xs && (0 to 1).contains(diff)
   }
 
-  property("size ~= List.size") = forAll { xs: List[Int] =>
-    StrictList.fromSeq(xs).size == xs.size
+  property("headOption ~= List.headOption") = forAll { xs: StrictList[Int] =>
+    xs.headOption == xs.toList.headOption
+  }
+
+  property("isEmpty ~= List.isEmpty") = forAll { xs: StrictList[Int] =>
+    xs.isEmpty == xs.toList.isEmpty
+  }
+
+  property("reverse.reverse = id") = forAll { xs: StrictList[Int] =>
+    xs.reverse.reverse == xs
+  }
+
+  property("size ~= List.size") = forAll { xs: StrictList[Int] =>
+    xs.size == xs.toList.size
   }
 }

@@ -40,7 +40,10 @@ sealed abstract class StrictList[A] extends Product with Serializable {
     go(this, b)
   }
 
-  final def halve: (StrictList[A], StrictList[A]) = ???
+  final def halve: (StrictList[A], StrictList[A]) = {
+    val n = math.ceil(size / 2.0).toInt
+    (take(n), drop(n))
+  }
 
   final def headOption: Option[A] =
     this match {
@@ -78,6 +81,9 @@ sealed abstract class StrictList[A] extends Product with Serializable {
       }
     go(n, this, empty)
   }
+
+  final def toList: List[A] =
+    foldLeft(List.empty[A])((l, a) => a +: l).reverse
 
   final override def toString: String = {
     val elems = this match {
