@@ -1,6 +1,7 @@
 package purefun
 
 import scala.annotation.tailrec
+import scala.util.control.TailCalls._
 
 sealed abstract class StrictList[A] extends Product with Serializable {
   import StrictList._
@@ -10,6 +11,15 @@ sealed abstract class StrictList[A] extends Product with Serializable {
       case Nil() => as
       case Cons(h, t) => Cons(h, t ++ as)
     }
+
+  final def app2(as: StrictList[A]): StrictList[A] = {
+    def go(list: StrictList[A]): TailRec[StrictList[A]] =
+      list match {
+        case Nil() => done(as)
+        case Cons(h, t) => tailcall(go(t).map(t2 => Cons(h, t2)))
+      }
+    go(this).result
+  }
 
   final def +:(a: A): StrictList[A] =
     Cons(a, this)
@@ -42,6 +52,15 @@ sealed abstract class StrictList[A] extends Product with Serializable {
 
   final def foldRight[B](b: B)(f: (A, B) => B): B =
     reverse.foldLeft(b)((b, a) => f(a, b))
+
+  final def foldRight2[B](b: B)(f: (A, B) => B): B = {
+    def go(list: StrictList[A], acc: B): TailRec[B] =
+      list match {
+        case Nil() => done(acc)
+        case Cons(h, t) => tailcall(go(t, acc).map(b => f(h, b)))
+      }
+    go(this, b).result
+  }
 
   @tailrec
   final def foreach(f: A => Unit): Unit =
