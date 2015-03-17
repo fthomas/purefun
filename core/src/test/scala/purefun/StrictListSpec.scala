@@ -8,12 +8,15 @@ object StrictListSpec extends Properties("StrictListSpec") {
   implicit def arbitraryStrictList[A](implicit A: Arbitrary[A]): Arbitrary[StrictList[A]] =
     Arbitrary(Gen.listOf(A.arbitrary).map(StrictList.fromSeq))
 
+  def maybeIndex(size: Int): Int =
+    Gen.choose(-1, size + 1).sample.get
+
   property("++ ~= List.++") = forAll { (xs: StrictList[Int], ys: StrictList[Int]) =>
     (xs ++ ys).toList == xs.toList ++ ys.toList
   }
 
   property("drop ~= List.drop") = forAll { xs: StrictList[Int] =>
-    val n = Gen.choose(-1, xs.size + 1).sample.get
+    val n = maybeIndex(xs.size)
     xs.drop(n).toList == xs.toList.drop(n)
   }
 
@@ -38,5 +41,10 @@ object StrictListSpec extends Properties("StrictListSpec") {
 
   property("size ~= List.size") = forAll { xs: StrictList[Int] =>
     xs.size == xs.toList.size
+  }
+
+  property("take ~= List.take") = forAll { xs: StrictList[Int] =>
+    val n = maybeIndex(xs.size)
+    xs.take(n).toList == xs.toList.take(n)
   }
 }

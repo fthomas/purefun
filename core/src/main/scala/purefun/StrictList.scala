@@ -46,16 +46,10 @@ sealed abstract class StrictList[A] extends Product with Serializable {
   }
 
   final def headOption: Option[A] =
-    this match {
-      case Cons(h, _) => Some(h)
-      case Nil() => None
-    }
+    uncons(None, (h, _) => Some(h))
 
   final def isEmpty: Boolean =
-    this match {
-      case Nil() => true
-      case _ => false
-    }
+    uncons(true, (_, _) => false)
 
   final def map[B](f: A => B): StrictList[B] =
     foldLeft(empty[B])((l, a) => Cons(f(a), l)).reverse
@@ -67,10 +61,7 @@ sealed abstract class StrictList[A] extends Product with Serializable {
     foldLeft(0)((s, _) => s + 1)
 
   final def tailOption: Option[StrictList[A]] =
-    this match {
-      case Cons(h, t) => Some(t)
-      case Nil() => None
-    }
+    uncons(None, (_, t) => Some(t))
 
   final def take(n: Int): StrictList[A] = {
     @tailrec
@@ -86,12 +77,18 @@ sealed abstract class StrictList[A] extends Product with Serializable {
     foldLeft(List.empty[A])((l, a) => a +: l).reverse
 
   final override def toString: String = {
-    val elems = this match {
-      case Nil() => ""
-      case Cons(h, t) => h.toString + t.foldLeft("")((s, a) => s + ", " + a.toString)
-    }
-    s"StrictList($elems)"
+    val name = "StrictList"
+    val elems = uncons("", (h, t) =>
+      h.toString + t.foldLeft("")((s, a) => s + ", " + a.toString))
+
+    s"$name($elems)"
   }
+
+  final def uncons[B](b: => B, f: (A, StrictList[A]) => B): B =
+    this match {
+      case Nil() => b
+      case Cons(h, t) => f(h, t)
+    }
 }
 
 object StrictList {
