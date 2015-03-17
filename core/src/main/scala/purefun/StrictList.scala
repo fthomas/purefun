@@ -40,6 +40,18 @@ sealed abstract class StrictList[A] extends Product with Serializable {
     go(this, b)
   }
 
+  final def foldRight[B](b: B)(f: (A, B) => B): B =
+    reverse.foldLeft(b)((b, a) => f(a, b))
+
+  @tailrec
+  final def foreach(f: A => Unit): Unit =
+    this match {
+      case Nil() => ()
+      case Cons(h, t) =>
+        f(h)
+        t.foreach(f)
+    }
+
   final def halve: (StrictList[A], StrictList[A]) = {
     val n = math.ceil(size / 2.0).toInt
     (take(n), drop(n))
@@ -74,12 +86,16 @@ sealed abstract class StrictList[A] extends Product with Serializable {
   }
 
   final def toList: List[A] =
-    foldLeft(List.empty[A])((l, a) => a +: l).reverse
+    foldRight(List.empty[A])((a, l) => a +: l)
 
   final override def toString: String = {
     val name = "StrictList"
-    val elems = uncons("", (h, t) =>
-      h.toString + t.foldLeft("")((s, a) => s + ", " + a.toString))
+    val elems = uncons("", (h, t) => {
+      val sb = new StringBuilder
+      sb.append(h.toString)
+      t.foreach { a => sb.append(", ").append(a.toString); () }
+      sb.toString()
+    })
 
     s"$name($elems)"
   }
@@ -96,7 +112,7 @@ object StrictList {
   final case class Nil[A]() extends StrictList[A]
 
   def apply[A](as: A*): StrictList[A] =
-    as.foldLeft(empty[A])((l, a) => Cons(a, l)).reverse
+    as.foldRight(empty[A])((a, l) => Cons(a, l))
 
   def empty[A]: StrictList[A] =
     Nil()
