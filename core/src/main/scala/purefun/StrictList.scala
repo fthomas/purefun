@@ -64,7 +64,7 @@ sealed abstract class StrictList[A] extends Product with Serializable {
     uncons(true, (_, _) => false)
 
   final def map[B](f: A => B): StrictList[B] =
-    foldLeft(empty[B])((l, a) => Cons(f(a), l)).reverse
+    foldRight(empty[B])((a, l) => Cons(f(a), l))
 
   final def reverse: StrictList[A] =
     foldLeft(empty[A])((l, a) => Cons(a, l))
@@ -91,8 +91,7 @@ sealed abstract class StrictList[A] extends Product with Serializable {
   final override def toString: String = {
     val name = "StrictList"
     val elems = uncons("", (h, t) => {
-      val sb = new StringBuilder
-      sb.append(h.toString)
+      val sb = new StringBuilder(h.toString)
       t.foreach { a => sb.append(", ").append(a.toString); () }
       sb.toString()
     })

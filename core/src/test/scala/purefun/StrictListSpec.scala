@@ -35,6 +35,11 @@ object StrictListSpec extends Properties("StrictListSpec") {
     xs.isEmpty == xs.toList.isEmpty
   }
 
+  property("map ~= List.map") = forAll { xs: StrictList[Int] =>
+    val f: Int => Int = _ + 1
+    xs.map(f).toList == xs.toList.map(f)
+  }
+
   property("reverse.reverse = id") = forAll { xs: StrictList[Int] =>
     xs.reverse.reverse == xs
   }
