@@ -2,11 +2,9 @@ package purefun
 
 import scala.annotation.tailrec
 
-sealed trait Color
-case object R extends Color
-case object B extends Color
-
 sealed abstract class RBTree[A] extends Product with Serializable {
+  import RBTree._
+
   protected def color: Color
 
   def depth: Int =
@@ -96,35 +94,43 @@ sealed abstract class RBTree[A] extends Product with Serializable {
     fold(0)((l, _, r) => l + r + 1)
 }
 
-case class Leaf[A]() extends RBTree[A] {
-  def color: Color = B
-}
-
-case class Node[A](left: RBTree[A], elem: A, right: RBTree[A], color: Color) extends RBTree[A] {
-  private[purefun] def balanceLeft: Node[A] =
-    this match {
-      case Node(Node(Node(a, x, b, R), y, c, R), z, d, B) => Node(Node(a, x, b, B), y, Node(c, z, d, B), R)
-      case Node(Node(a, x, Node(b, y, c, R), R), z, d, B) => Node(Node(a, x, b, B), y, Node(c, z, d, B), R)
-      case _ => this
-    }
-
-  private[purefun] def balanceRight: Node[A] =
-    this match {
-      case Node(a, x, Node(Node(b, y, c, R), z, d, R), B) => Node(Node(a, x, b, B), y, Node(c, z, d, B), R)
-      case Node(a, x, Node(b, y, Node(c, z, d, R), R), B) => Node(Node(a, x, b, B), y, Node(c, z, d, B), R)
-      case _ => this
-    }
-}
-
 object RBTree {
+  sealed trait Color
+  case object R extends Color
+  case object B extends Color
+
+  final case class Leaf[A]() extends RBTree[A] {
+    def color: Color = B
+  }
+
+  final case class Node[A](left: RBTree[A], elem: A, right: RBTree[A], color: Color) extends RBTree[A] {
+    private[purefun] def balanceLeft: Node[A] =
+      this match {
+        case Node(Node(Node(a, x, b, R), y, c, R), z, d, B) => Node(Node(a, x, b, B), y, Node(c, z, d, B), R)
+        case Node(Node(a, x, Node(b, y, c, R), R), z, d, B) => Node(Node(a, x, b, B), y, Node(c, z, d, B), R)
+        case _ => this
+      }
+
+    private[purefun] def balanceRight: Node[A] =
+      this match {
+        case Node(a, x, Node(Node(b, y, c, R), z, d, R), B) => Node(Node(a, x, b, B), y, Node(c, z, d, B), R)
+        case Node(a, x, Node(b, y, Node(c, z, d, R), R), B) => Node(Node(a, x, b, B), y, Node(c, z, d, B), R)
+        case _ => this
+      }
+  }
+
   def apply[A: Ordering](as: A*): RBTree[A] =
     as.foldLeft(empty[A])((t, a) => t.insert(a))
 
-  def empty[A]: RBTree[A] = Leaf()
+  def empty[A]: RBTree[A] =
+    Leaf()
 
-  def fromSeq[A: Ordering](as: Seq[A]): RBTree[A] = apply(as: _*)
+  def fromSeq[A: Ordering](as: Seq[A]): RBTree[A] =
+    apply(as: _*)
 
-  def fromSet[A: Ordering](as: Set[A]): RBTree[A] = fromSeq(as.toSeq)
+  def fromSet[A: Ordering](as: Set[A]): RBTree[A] =
+    as.foldLeft(empty[A])((t, a) => t.insert(a))
 
-  def singleton[A](a: A): RBTree[A] = Node(empty, a, empty, B)
+  def singleton[A](a: A): RBTree[A] =
+    Node(empty, a, empty, B)
 }

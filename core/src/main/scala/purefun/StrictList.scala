@@ -1,27 +1,15 @@
 package purefun
 
 import scala.annotation.tailrec
-import scala.util.control.TailCalls._
 
 sealed abstract class StrictList[A] extends Product with Serializable {
   import StrictList._
 
   final def ++(as: StrictList[A]): StrictList[A] =
-    this match {
-      case Nil() => as
-      case Cons(h, t) => Cons(h, t ++ as)
-    }
+    if (as.isEmpty) this
+    else foldRight(as)((a, l) => a :: l)
 
-  final def app2(as: StrictList[A]): StrictList[A] = {
-    def go(list: StrictList[A]): TailRec[StrictList[A]] =
-      list match {
-        case Nil() => done(as)
-        case Cons(h, t) => tailcall(go(t).map(t2 => Cons(h, t2)))
-      }
-    go(this).result
-  }
-
-  final def +:(a: A): StrictList[A] =
+  final def ::(a: A): StrictList[A] =
     Cons(a, this)
 
   @tailrec
@@ -38,7 +26,18 @@ sealed abstract class StrictList[A] extends Product with Serializable {
       case _ => this
     }
 
-  final def flatMap[B](f: A => StrictList[B]): StrictList[B] = ???
+  final def flatMap[B](f: A => StrictList[B]): StrictList[B] =
+    map(f).flatten
+
+  final def flatten[B](implicit ev: A => StrictList[B]): StrictList[B] = {
+    var result = empty[B]
+    foreach { a =>
+      a.foreach { b =>
+        result = b :: result
+      }
+    }
+    result.reverse
+  }
 
   final def foldLeft[B](b: B)(f: (B, A) => B): B = {
     @tailrec
@@ -53,15 +52,6 @@ sealed abstract class StrictList[A] extends Product with Serializable {
   final def foldRight[B](b: B)(f: (A, B) => B): B =
     reverse.foldLeft(b)((b, a) => f(a, b))
 
-  final def foldRight2[B](b: B)(f: (A, B) => B): B = {
-    def go(list: StrictList[A], acc: B): TailRec[B] =
-      list match {
-        case Nil() => done(acc)
-        case Cons(h, t) => tailcall(go(t, acc).map(b => f(h, b)))
-      }
-    go(this, b).result
-  }
-
   @tailrec
   final def foreach(f: A => Unit): Unit =
     this match {
@@ -72,8 +62,14 @@ sealed abstract class StrictList[A] extends Product with Serializable {
     }
 
   final def halve: (StrictList[A], StrictList[A]) = {
+    @tailrec
+    def go(front: StrictList[A], n: Int, rear: StrictList[A]): (StrictList[A], StrictList[A]) =
+      rear match {
+        case Cons(h, t) if n > 0 => go(h :: front, n - 1, t)
+        case _ => (front.reverse, rear)
+      }
     val n = math.ceil(size / 2.0).toInt
-    (take(n), drop(n))
+    go(empty, n, this)
   }
 
   final def headOption: Option[A] =
@@ -83,10 +79,10 @@ sealed abstract class StrictList[A] extends Product with Serializable {
     uncons(true, (_, _) => false)
 
   final def map[B](f: A => B): StrictList[B] =
-    foldRight(empty[B])((a, l) => Cons(f(a), l))
+    foldRight(empty[B])((a, l) => f(a) :: l)
 
   final def reverse: StrictList[A] =
-    foldLeft(empty[A])((l, a) => Cons(a, l))
+    foldLeft(empty[A])((l, a) => a :: l)
 
   final def size: Int =
     foldLeft(0)((s, _) => s + 1)
@@ -98,7 +94,7 @@ sealed abstract class StrictList[A] extends Product with Serializable {
     @tailrec
     def go(i: Int, list: StrictList[A], acc: StrictList[A]): StrictList[A] =
       list match {
-        case Cons(h, t) if i > 0 => go(i - 1, t, Cons(h, acc))
+        case Cons(h, t) if i > 0 => go(i - 1, t, h :: acc)
         case _ => acc.reverse
       }
     go(n, this, empty)
@@ -130,7 +126,7 @@ object StrictList {
   final case class Nil[A]() extends StrictList[A]
 
   def apply[A](as: A*): StrictList[A] =
-    as.foldRight(empty[A])((a, l) => Cons(a, l))
+    as.foldRight(empty[A])((a, l) => a :: l)
 
   def empty[A]: StrictList[A] =
     Nil()
