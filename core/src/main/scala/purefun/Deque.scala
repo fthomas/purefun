@@ -31,6 +31,14 @@ class Deque[A](private val front: StrictList[A], private val rear: StrictList[A]
       case Cons(h, t) => Some(new Deque(t, rear).balance)
       case _ => None
     }
+
+  final def toList: List[A] = {
+    val r = rear.foldLeft(List.empty[A])((l, a) => a :: l)
+    front.foldRight(r)((a, l) => a :: l)
+  }
+
+  final def toStrictList: StrictList[A] =
+    front ++ rear.reverse
 }
 
 object Deque {
