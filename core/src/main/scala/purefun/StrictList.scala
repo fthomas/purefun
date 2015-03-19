@@ -26,18 +26,18 @@ sealed abstract class StrictList[A] extends Product with Serializable {
       case _ => this
     }
 
-  final def flatMap[B](f: A => StrictList[B]): StrictList[B] =
-    map(f).flatten
-
-  final def flatten[B](implicit ev: A => StrictList[B]): StrictList[B] = {
+  final def flatMap[B](f: A => StrictList[B]): StrictList[B] = {
     var result = empty[B]
     foreach { a =>
-      a.foreach { b =>
+      f(a).foreach { b =>
         result = b :: result
       }
     }
     result.reverse
   }
+
+  final def flatten[B](implicit ev: A => StrictList[B]): StrictList[B] =
+    flatMap(ev)
 
   final def foldLeft[B](b: B)(f: (B, A) => B): B = {
     @tailrec
@@ -77,6 +77,14 @@ sealed abstract class StrictList[A] extends Product with Serializable {
 
   final def isEmpty: Boolean =
     uncons(true, (_, _) => false)
+
+  @tailrec
+  final def lastOption: Option[A] =
+    this match {
+      case Cons(h, Nil()) => Some(h)
+      case Cons(_, t) => t.lastOption
+      case Nil() => None
+    }
 
   final def map[B](f: A => B): StrictList[B] =
     foldRight(empty[B])((a, l) => f(a) :: l)

@@ -20,6 +20,16 @@ object StrictListSpec extends Properties("StrictListSpec") {
     xs.drop(n).toList == xs.toList.drop(n)
   }
 
+  property("flatMap ~= List.flatMap") = forAll { xs: StrictList[Int] =>
+    val f = (i: Int) => StrictList(i - 1, i, i + 1)
+    val g = f.andThen(_.toList)
+    xs.flatMap(f).toList == xs.toList.flatMap(g)
+  }
+
+  property("flatten ~= List.flatten") = forAll { xs: StrictList[StrictList[Int]] =>
+    xs.flatten.toList == xs.map(_.toList).toList.flatten
+  }
+
   property("halve") = forAll { xs: StrictList[Int] =>
     val (l, r) = xs.halve
     val diff = l.size - r.size
@@ -33,6 +43,10 @@ object StrictListSpec extends Properties("StrictListSpec") {
 
   property("isEmpty ~= List.isEmpty") = forAll { xs: StrictList[Int] =>
     xs.isEmpty == xs.toList.isEmpty
+  }
+
+  property("lastOption ~= List.lastOption") = forAll { xs: StrictList[Int] =>
+    xs.lastOption == xs.toList.lastOption
   }
 
   property("map ~= List.map") = forAll { xs: StrictList[Int] =>
