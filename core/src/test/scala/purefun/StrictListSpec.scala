@@ -50,7 +50,7 @@ object StrictListSpec extends Properties("StrictListSpec") {
   }
 
   property("map ~= List.map") = forAll { xs: StrictList[Int] =>
-    val f: Int => Int = _ + 1
+    val f = (i: Int) => i + 1
     xs.map(f).toList == xs.toList.map(f)
   }
 
