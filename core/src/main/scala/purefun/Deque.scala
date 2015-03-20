@@ -2,13 +2,17 @@ package purefun
 
 final class Deque[A] private (front: StrictList[A], rear: StrictList[A]) {
   import Deque._
-  import StrictList._
 
   def +:(a: A): Deque[A] =
     balance(a :: front, rear)
 
   def :+(a: A): Deque[A] =
     balance(front, a :: rear)
+
+  def flatMap[B](f: A => Deque[B]): Deque[B] = ???
+
+  def flatten[B](implicit ev: A => Deque[B]): Deque[B] =
+    flatMap(ev)
 
   def foreach(f: A => Unit): Unit = {
     front.foreach(f)
@@ -19,10 +23,7 @@ final class Deque[A] private (front: StrictList[A], rear: StrictList[A]) {
     front.headOption
 
   def initOption: Option[Deque[A]] =
-    rear match {
-      case Cons(h, t) => Some(balance(front, t))
-      case _ => None
-    }
+    rear.uncons(None, (_, t) => Some(balance(front, t)))
 
   def lastOption: Option[A] =
     rear.headOption
@@ -31,10 +32,7 @@ final class Deque[A] private (front: StrictList[A], rear: StrictList[A]) {
     new Deque(front.map(f), rear.map(f))
 
   def tailOption: Option[Deque[A]] =
-    front match {
-      case Cons(h, t) => Some(balance(t, rear))
-      case _ => None
-    }
+    front.uncons(None, (_, t) => Some(balance(t, rear)))
 
   def toList: List[A] = {
     val r = rear.foldLeft(List.empty[A])((l, a) => a :: l)

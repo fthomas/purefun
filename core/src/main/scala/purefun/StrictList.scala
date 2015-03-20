@@ -62,14 +62,8 @@ sealed abstract class StrictList[A] extends Product with Serializable {
     }
 
   final def halve: (StrictList[A], StrictList[A]) = {
-    @tailrec
-    def go(front: StrictList[A], n: Int, rear: StrictList[A]): (StrictList[A], StrictList[A]) =
-      rear match {
-        case Cons(h, t) if n > 0 => go(h :: front, n - 1, t)
-        case _ => (front.reverse, rear)
-      }
     val n = math.ceil(size / 2.0).toInt
-    go(empty, n, this)
+    splitAt(n)
   }
 
   final def headOption: Option[A] =
@@ -94,6 +88,16 @@ sealed abstract class StrictList[A] extends Product with Serializable {
 
   final def size: Int =
     foldLeft(0)((s, _) => s + 1)
+
+  final def splitAt(n: Int): (StrictList[A], StrictList[A]) = {
+    @tailrec
+    def go(front: StrictList[A], n: Int, rear: StrictList[A]): (StrictList[A], StrictList[A]) =
+      rear match {
+        case Cons(h, t) if n > 0 => go(h :: front, n - 1, t)
+        case _ => (front.reverse, rear)
+      }
+    go(empty, n, this)
+  }
 
   final def tailOption: Option[StrictList[A]] =
     uncons(None, (_, t) => Some(t))

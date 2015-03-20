@@ -6,7 +6,7 @@ import org.scalacheck.Prop._
 object StrictListSpec extends Properties("StrictListSpec") {
 
   implicit def arbitraryStrictList[A](implicit A: Arbitrary[A]): Arbitrary[StrictList[A]] =
-    Arbitrary(Gen.listOf(A.arbitrary).map(StrictList.fromSeq))
+    Arbitrary(Gen.listOf(A.arbitrary).map(_.foldLeft(StrictList.empty[A])((l, a) => a :: l)))
 
   def maybeIndex(size: Int): Int =
     Gen.choose(-1, size + 1).sample.get
@@ -56,6 +56,12 @@ object StrictListSpec extends Properties("StrictListSpec") {
 
   property("reverse.reverse = id") = forAll { xs: StrictList[Int] =>
     xs.reverse.reverse == xs
+  }
+
+  property("splitAt ~= List.splitAt") = forAll { xs: StrictList[Int] =>
+    val n = maybeIndex(xs.size)
+    val (l, r) = xs.splitAt(n)
+    (l.toList, r.toList) == xs.toList.splitAt(n)
   }
 
   property("size ~= List.size") = forAll { xs: StrictList[Int] =>
