@@ -9,6 +9,9 @@ final class Deque[A] private (front: StrictList[A], rear: StrictList[A]) {
   def :+(a: A): Deque[A] =
     balance(front, a :: rear)
 
+  def filter(p: A => Boolean): Deque[A] =
+    balance(front.filter(p), rear.filter(p))
+
   def flatMap[B](f: A => Deque[B]): Deque[B] = ???
 
   def flatten[B](implicit ev: A => Deque[B]): Deque[B] =
@@ -26,7 +29,7 @@ final class Deque[A] private (front: StrictList[A], rear: StrictList[A]) {
     rear.uncons(None, (_, t) => Some(balance(front, t)))
 
   def lastOption: Option[A] =
-    rear.headOption
+    rear.headOption.orElse(headOption)
 
   def map[B](f: A => B): Deque[B] =
     new Deque(front.map(f), rear.map(f))
@@ -41,12 +44,28 @@ final class Deque[A] private (front: StrictList[A], rear: StrictList[A]) {
 
   def toStrictList: StrictList[A] =
     front ++ rear.reverse
+
+  override def toString: String = {
+    val name = "Deque"
+    val elems = {
+      val sb = new StringBuilder
+      front.uncons(sb, (h, t) => {
+        sb.append(h.toString)
+        t.foreach { a => sb.append(", ").append(a.toString); () }
+        rear.reverse.foreach { a => sb.append(", ").append(a.toString); () }
+        sb
+      })
+    }.toString
+
+    s"$name($elems)"
+  }
 }
 
 object Deque {
   import StrictList._
 
-  def apply[A](as: A*): Deque[A] = ???
+  def apply[A](as: A*): Deque[A] =
+    fromStrictList(StrictList(as: _*))
 
   private def balance[A](front: StrictList[A], rear: StrictList[A]): Deque[A] =
     (front, rear) match {
@@ -63,7 +82,8 @@ object Deque {
   def empty[A]: Deque[A] =
     new Deque[A](StrictList.empty, StrictList.empty)
 
-  def fromSeq[A](as: Seq[A]): Deque[A] = ???
+  def fromSeq[A](as: Seq[A]): Deque[A] =
+    fromStrictList(StrictList.fromSeq(as))
 
   def fromStrictList[A](list: StrictList[A]): Deque[A] =
     balance(list, StrictList.empty)

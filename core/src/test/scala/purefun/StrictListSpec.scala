@@ -20,6 +20,11 @@ object StrictListSpec extends Properties("StrictListSpec") {
     xs.drop(n).toList == xs.toList.drop(n)
   }
 
+  property("filter ~= List.filter") = forAll { xs: StrictList[Int] =>
+    val p = (i: Int) => i % 2 == 0
+    xs.filter(p).toList == xs.toList.filter(p)
+  }
+
   property("flatMap ~= List.flatMap") = forAll { xs: StrictList[Int] =>
     val f = (i: Int) => StrictList(i - 1, i, i + 1)
     val g = f.andThen(_.toList)

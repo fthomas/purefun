@@ -26,6 +26,9 @@ sealed abstract class StrictList[A] extends Product with Serializable {
       case _ => this
     }
 
+  final def filter(p: A => Boolean): StrictList[A] =
+    foldRight(empty[A])((a, l) => if (p(a)) a :: l else l)
+
   final def flatMap[B](f: A => StrictList[B]): StrictList[B] = {
     var result = empty[B]
     foreach { a =>
