@@ -1,6 +1,6 @@
 package purefun
 
-final case class Deque[A] private (front: StrictList[A], rear: StrictList[A]) {
+final case class Deque[A] private (private val front: StrictList[A], private val rear: StrictList[A]) {
   import Deque._
 
   def +:(a: A): Deque[A] =
