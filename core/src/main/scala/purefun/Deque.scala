@@ -9,6 +9,8 @@ final case class Deque[A] private (private val front: StrictList[A], private val
   def :+(a: A): Deque[A] =
     balance(front, a :: rear)
 
+  def drop(n: Int): Deque[A] = ???
+
   def filter(p: A => Boolean): Deque[A] =
     balance(front.filter(p), rear.filter(p))
 
@@ -88,7 +90,7 @@ object Deque {
     }
 
   def empty[A]: Deque[A] =
-    new Deque[A](StrictList.empty, StrictList.empty)
+    Deque(StrictList.empty[A], StrictList.empty[A])
 
   def fromSeq[A](as: Seq[A]): Deque[A] =
     fromStrictList(StrictList.fromSeq(as))

@@ -26,15 +26,15 @@ lazy val commonSettings = Seq(
 lazy val purefun = project.in(file("."))
   .aggregate(bench, core)
   .dependsOn(bench, core)
-  .settings(commonSettings: _*)
+  .settings(commonSettings)
 
 lazy val bench = project
   .dependsOn(core)
-  .settings(commonSettings: _*)
-  .settings(jmhSettings: _*)
+  .settings(commonSettings)
+  .settings(jmhSettings)
 
 lazy val core = project
-  .settings(commonSettings: _*)
+  .settings(commonSettings)
   .settings(
     libraryDependencies += "org.scalacheck" %% "scalacheck" % "1.12.2" % "test"
   )
