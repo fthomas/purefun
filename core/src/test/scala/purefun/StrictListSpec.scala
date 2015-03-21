@@ -8,6 +8,8 @@ object StrictListSpec extends Properties("StrictListSpec") {
   implicit def arbitraryStrictList[A](implicit A: Arbitrary[A]): Arbitrary[StrictList[A]] =
     Arbitrary(Gen.listOf(A.arbitrary).map(_.foldLeft(StrictList.empty[A])((l, a) => a :: l)))
 
+  val isEven = (i: Int) => i % 2 == 0
+
   def maybeIndex(size: Int): Int =
     Gen.choose(-1, size + 1).sample.get
 
@@ -21,8 +23,11 @@ object StrictListSpec extends Properties("StrictListSpec") {
   }
 
   property("filter ~= List.filter") = forAll { xs: StrictList[Int] =>
-    val p = (i: Int) => i % 2 == 0
-    xs.filter(p).toList == xs.toList.filter(p)
+    xs.filter(isEven).toList == xs.toList.filter(isEven)
+  }
+
+  property("find ~= List.find") = forAll { xs: StrictList[Int] =>
+    xs.find(isEven) == xs.toList.find(isEven)
   }
 
   property("flatMap ~= List.flatMap") = forAll { xs: StrictList[Int] =>
