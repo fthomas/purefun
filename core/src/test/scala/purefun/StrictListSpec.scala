@@ -59,6 +59,11 @@ object StrictListSpec extends Properties("StrictListSpec") {
     xs.map(f).toList == xs.toList.map(f)
   }
 
+  property("mkString ~= List.mkString") = forAll { xs: StrictList[Int] =>
+    val (start, sep, end) = ("(", ",", ")")
+    xs.mkString(start, sep, end) == xs.toList.mkString(start, sep, end)
+  }
+
   property("reverse.reverse = id") = forAll { xs: StrictList[Int] =>
     xs.reverse.reverse == xs
   }

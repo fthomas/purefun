@@ -86,6 +86,23 @@ sealed abstract class StrictList[A] extends Product with Serializable {
   final def map[B](f: A => B): StrictList[B] =
     foldRight(empty[B])((a, l) => f(a) :: l)
 
+  final def mkString: String =
+    mkString("")
+
+  final def mkString(sep: String): String =
+    mkString("", sep, "")
+
+  final def mkString(start: String, sep: String, end: String): String = {
+    val sb = new StringBuilder(start)
+    if (sep.isEmpty) foreach { a => sb.append(a.toString); () }
+    else uncons((), (h, t) => {
+      sb.append(h.toString)
+      t.foreach { a => sb.append(sep).append(a.toString); () }
+    })
+    sb.append(end)
+    sb.result()
+  }
+
   final def reverse: StrictList[A] =
     foldLeft(empty[A])((l, a) => a :: l)
 
@@ -119,14 +136,8 @@ sealed abstract class StrictList[A] extends Product with Serializable {
     foldRight(List.empty[A])((a, l) => a +: l)
 
   final override def toString: String = {
-    val name = "StrictList"
-    val elems = uncons("", (h, t) => {
-      val sb = new StringBuilder(h.toString)
-      t.foreach { a => sb.append(", ").append(a.toString); () }
-      sb.toString()
-    })
-
-    s"$name($elems)"
+    val prefix = "StrictList"
+    mkString(s"$prefix(", ", ", ")")
   }
 
   final def uncons[B](b: => B, f: (A, StrictList[A]) => B): B =

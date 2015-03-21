@@ -1,6 +1,6 @@
 package purefun
 
-final class Deque[A] private (front: StrictList[A], rear: StrictList[A]) {
+final case class Deque[A] private (front: StrictList[A], rear: StrictList[A]) {
   import Deque._
 
   def +:(a: A): Deque[A] =
@@ -25,6 +25,9 @@ final class Deque[A] private (front: StrictList[A], rear: StrictList[A]) {
   def headOption: Option[A] =
     front.headOption
 
+  def isEmpty: Boolean =
+    front.isEmpty
+
   def initOption: Option[Deque[A]] =
     rear.uncons(None, (_, t) => Some(balance(front, t)))
 
@@ -32,10 +35,13 @@ final class Deque[A] private (front: StrictList[A], rear: StrictList[A]) {
     rear.headOption.orElse(headOption)
 
   def map[B](f: A => B): Deque[B] =
-    new Deque(front.map(f), rear.map(f))
+    Deque(front.map(f), rear.map(f))
 
   def tailOption: Option[Deque[A]] =
     front.uncons(None, (_, t) => Some(balance(t, rear)))
+
+  def size: Int =
+    front.size + rear.size
 
   def toList: List[A] = {
     val r = rear.foldLeft(List.empty[A])((l, a) => a :: l)
@@ -49,13 +55,15 @@ final class Deque[A] private (front: StrictList[A], rear: StrictList[A]) {
     val name = "Deque"
     val elems = {
       val sb = new StringBuilder
-      front.uncons(sb, (h, t) => {
+      def append(a: A): Unit = { sb.append(", ").append(a.toString); () }
+
+      front.uncons("", (h, t) => {
         sb.append(h.toString)
-        t.foreach { a => sb.append(", ").append(a.toString); () }
-        rear.reverse.foreach { a => sb.append(", ").append(a.toString); () }
-        sb
+        t.foreach(append)
+        rear.reverse.foreach(append)
+        sb.toString()
       })
-    }.toString
+    }
 
     s"$name($elems)"
   }
@@ -72,11 +80,11 @@ object Deque {
       case (Nil(), Nil()) => empty
       case (f, Nil()) =>
         val (nf, nr) = f.halve
-        new Deque(nf, nr.reverse)
+        Deque(nf, nr.reverse)
       case (Nil(), r) =>
         val (nr, nf) = r.halve
-        new Deque(nf.reverse, nr)
-      case _ => new Deque(front, rear)
+        Deque(nf.reverse, nr)
+      case _ => Deque(front, rear)
     }
 
   def empty[A]: Deque[A] =
