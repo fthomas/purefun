@@ -5,11 +5,9 @@ import scala.annotation.tailrec
 sealed abstract class StrictList[A] extends Product with Serializable {
   import StrictList._
 
-  final def ++(as: StrictList[A]): StrictList[A] =
-    if (as.isEmpty) this
-    else foldRight(as)((a, l) => a :: l)
+  def ++(as: StrictList[A]): StrictList[A]
 
-  final def ::(a: A): StrictList[A] =
+  final def ::(a: A): StrictList.Cons[A] =
     Cons(a, this)
 
   @tailrec
@@ -76,22 +74,14 @@ sealed abstract class StrictList[A] extends Product with Serializable {
     splitAt(n)
   }
 
-  final def headOption: Option[A] =
-    uncons(None, (h, _) => Some(h))
+  def headOption: Option[A]
 
   final def isEmpty: Boolean =
     uncons(true, (_, _) => false)
 
-  @tailrec
-  final def lastOption: Option[A] =
-    this match {
-      case Cons(h, Nil()) => Some(h)
-      case Cons(_, t) => t.lastOption
-      case Nil() => None
-    }
+  def lastOption: Option[A]
 
-  final def map[B](f: A => B): StrictList[B] =
-    foldRight(empty[B])((a, l) => f(a) :: l)
+  def map[B](f: A => B): StrictList[B]
 
   final def mkString: String =
     mkString("")
@@ -126,8 +116,7 @@ sealed abstract class StrictList[A] extends Product with Serializable {
     go(empty, n, this)
   }
 
-  final def tailOption: Option[StrictList[A]] =
-    uncons(None, (_, t) => Some(t))
+  def tailOption: Option[StrictList[A]]
 
   final def take(n: Int): StrictList[A] = {
     @tailrec
@@ -155,8 +144,46 @@ sealed abstract class StrictList[A] extends Product with Serializable {
 }
 
 object StrictList {
-  final case class Cons[A](head: A, tail: StrictList[A]) extends StrictList[A]
-  final case class Nil[A]() extends StrictList[A]
+  final case class Cons[A](head: A, tail: StrictList[A]) extends StrictList[A] {
+
+    override def ++(as: StrictList[A]): Cons[A] =
+      if (as.isEmpty) this
+      else foldRight(as)((a, l) => a :: l).asInstanceOf[Cons[A]]
+
+    override def headOption: Some[A] =
+      Some(head)
+
+    @tailrec
+    override def lastOption: Some[A] =
+      this match {
+        case Cons(h, Nil()) => Some(h)
+        case Cons(_, t @ Cons(_, _)) => t.lastOption
+      }
+
+    override def map[B](f: A => B): Cons[B] =
+      foldRight(empty[B])((a, l) => f(a) :: l).asInstanceOf[Cons[B]]
+
+    override def tailOption: Some[StrictList[A]] =
+      Some(tail)
+  }
+
+  final case class Nil[A]() extends StrictList[A] {
+
+    override def ++(as: StrictList[A]): StrictList[A] =
+      as
+
+    override def headOption: None.type =
+      None
+
+    override def lastOption: None.type =
+      None
+
+    override def map[B](f: A => B): Nil[B] =
+      Nil()
+
+    override def tailOption: None.type =
+      None
+  }
 
   def apply[A](as: A*): StrictList[A] =
     as.foldRight(empty[A])((a, l) => a :: l)

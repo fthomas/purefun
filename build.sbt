@@ -1,7 +1,7 @@
 import pl.project13.scala.sbt.SbtJmh._
 
 lazy val commonSettings = Seq(
-  scalaVersion := "2.11.6",
+  scalaVersion := "2.11.8",
   scalacOptions ++= Seq(
     "-deprecation",
     "-encoding", "UTF-8",
@@ -36,5 +36,5 @@ lazy val bench = project
 lazy val core = project
   .settings(commonSettings)
   .settings(
-    libraryDependencies += "org.scalacheck" %% "scalacheck" % "1.12.2" % "test"
+    libraryDependencies += "org.scalacheck" %% "scalacheck" % "1.13.2" % "test"
   )
